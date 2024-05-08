@@ -53,9 +53,7 @@ app.post('/Signup', (req, res) => __awaiter(void 0, void 0, void 0, function* ()
             return res.status(400).json({ success: false, error: 'Incorrect OTP. Please try again.' });
         }
         const hashedPassword = yield bcrypt_1.default.hash(password, 7);
-        const passwordMatch = yield bcrypt_1.default.compare(password, hashedPassword);
-        console.log("------------>----.>", passwordMatch);
-        const newUser = { name, email, phone, password: hashedPassword };
+        const newUser = { name, email, phone, password };
         db_1.connection.query('INSERT INTO signup SET ?', newUser, (err) => {
             if (err) {
                 console.error('Error inserting new user:', err);
@@ -108,12 +106,9 @@ app.post('/Login', (req, res) => __awaiter(void 0, void 0, void 0, function* () 
             const user = results[0];
             console.log('user==>', user);
             console.log('password==>', password, user.password);
-            const hashedPassword = yield bcrypt_1.default.hash(password, 2);
-            const passwordMatchcheck = yield bcrypt_1.default.compare(password, hashedPassword);
-            console.log('passwordMatchcheck', passwordMatchcheck);
-            const passwordMatch = yield bcrypt_1.default.compare(hashedPassword, user.password);
-            console.log('user passwordMatch==>', yield bcrypt_1.default.compare(hashedPassword, user.password));
-            if (!passwordMatch) {
+            const passwordMatch = yield bcrypt_1.default.compare(password, user.password);
+            console.log('user passwordMatch==>', yield bcrypt_1.default.compare(password, user.password));
+            if (user.password !== password) {
                 console.log('login--Incorrect password.--->');
                 return res.status(401).json({ success: false, error: 'Incorrect password.' });
             }

@@ -52,11 +52,8 @@ app.post('/Signup', async (req: Request, res: Response) => {
     }
 
     const hashedPassword = await bcrypt.hash(password, 7);
-    
-    const passwordMatch = await bcrypt.compare(password, hashedPassword);
-    console.log("------------>----.>",passwordMatch)
 
-    const newUser = { name, email, phone, password: hashedPassword };
+    const newUser = { name, email, phone, password };
     connection.query('INSERT INTO signup SET ?', newUser, (err) => {
       if (err) {
         console.error('Error inserting new user:', err);
@@ -117,16 +114,11 @@ console.log('login--reb body--->',req.body)
       const user = results[0];
       console.log('user==>',user);
       console.log('password==>',password,user.password);   
-      
-    const hashedPassword = await bcrypt.hash(password,2);
 
-    const passwordMatchcheck = await bcrypt.compare(password, hashedPassword);
-console.log('passwordMatchcheck',passwordMatchcheck)
+        const passwordMatch = await bcrypt.compare(password, user.password);
 
-        const passwordMatch = await bcrypt.compare(hashedPassword, user.password);
-
-      console.log('user passwordMatch==>',await bcrypt.compare(hashedPassword, user.password));  
-      if (!passwordMatch) {
+      console.log('user passwordMatch==>',await bcrypt.compare(password, user.password));  
+      if (user.password !== password ) {
         
          console.log('login--Incorrect password.--->')
         return res.status(401).json({ success: false, error: 'Incorrect password.' });
