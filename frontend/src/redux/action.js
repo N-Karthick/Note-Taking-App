@@ -7,7 +7,8 @@ import {
   SIGNUP_SUCCESS, SIGNUP_REQUEST, SIGNUP_FAILURE,
   SIGNUPRESPONSE_SUCCESS,  SIGNUPRESPONSE_FAILURE,
   LOGINRESPONSE_SUCCESS,  LOGINRESPONSE_FAILURE,
-  NOTESRESPONSE_REQUEST,NOTESRESPONSE_SUCCESS,NOTESRESPONSE_FAILURE
+  NOTESRESPONSE_REQUEST,NOTESRESPONSE_SUCCESS,NOTESRESPONSE_FAILURE,
+  ADDNOTERESPONSE_REQUEST,ADDNOTERESPONSE_SUCCESS,ADDNOTERESPONSE_FAILURE
 } from './actionTypes'
 
 const axiosInstance = axios.create({
@@ -15,6 +16,7 @@ const axiosInstance = axios.create({
 });
 
 const otpRequest = () => ({ type: OTP_REQUEST });
+const addNoteResponseRequest = () => ({ type:  ADDNOTERESPONSE_REQUEST });
 const otpSuccess = (user) => ({ type: OTP_SUCCESS, payload: user });
 const loginRequest = () => ({ type: LOGIN_REQUEST });
 const SigupRequest = () => ({ type: SIGNUP_REQUEST });
@@ -50,6 +52,16 @@ export const NotesResponseSuccess = (notesData) => ({
 
 export const NotesResponseFailure = (error) => ({
   type: NOTESRESPONSE_FAILURE,
+  payload: { error },
+});
+
+export const AddNotesResponseSuccess = (addNotesData) => ({
+  type: ADDNOTERESPONSE_SUCCESS,
+  payload: { addNotesData },
+});
+
+export const AddNotesResponseFailure = (error) => ({
+  type: ADDNOTERESPONSE_FAILURE,
   payload: { error },
 });
 
@@ -106,18 +118,21 @@ export const userSigninDetails = (userDetails) => {
   }
 }
 
-export const userNotes = () => {
+export const userNotes = (email) => {
   return async (dispatch, getState) => {
     dispatch(NotesResponseRequest());
+    console.log("============1",NotesResponseRequest)
     try {
       const token = getState().token; 
       const config = {
         headers: {
           Authorization: `Bearer ${token}`, 
-        },
-      };
+        } };
+      
+    console.log("============2",NotesResponseRequest);
       const response = await axiosInstance.get('/Notes', config);
-      const notes = response.data.notes; 
+      const notes = response.data; 
+      console.log("============response",response,notes);
       dispatch(NotesResponseSuccess(notes));
     } catch (error) {
       dispatch(NotesResponseFailure(error.response.data.error));
@@ -126,3 +141,26 @@ export const userNotes = () => {
   };
 };
 
+export const addNotes = (title, note) => {
+  return async (dispatch, getState) => {
+    dispatch(addNoteResponseRequest());
+
+    try {
+      const token = getState().token; 
+      const email = localStorage.getItem('email');
+      const config = {
+        headers: {
+          Authorization: `Bearer ${token}`,
+        },
+      };
+      
+      const data = { title, note, email }; 
+      const response = await axiosInstance.post('/addNotes', data, config); 
+      dispatch(AddNotesResponseSuccess());
+      console.log('Notes added successfully:', response.data);
+    } catch (error) {
+      dispatch(AddNotesResponseFailure(error.response.data.error));
+      console.log('Error adding notes:', error.response.data.error);
+    }
+  };
+};

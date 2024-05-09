@@ -31,9 +31,10 @@ const Login = () => {
       setShowSuccessMessage(true);
       setTimeout(() => {
         setShowSuccessMessage(false);
-        dispatch(userNotes(
-         { email: email }
-        ));
+        dispatch(userNotes());
+        console.log('dispatch to notes---->',dispatch(userNotes(
+          { email: email }
+         )))
         navigate('/Notes')
       }, 2000);
     }
@@ -76,7 +77,7 @@ const Login = () => {
           <Link to="/Signup">Sign Up Here</Link><br />
           {/* <Link to="/flights">Home</Link> */}
         </div>
-        {error.message  &&(
+        {/* {error.message  &&(
           <Alert
             sx={{ zIndex: 10, display: 'flex', position: 'absolute', left: '80px', bottom: '521px' }}
             severity="warning"
@@ -84,7 +85,7 @@ const Login = () => {
             {error.message}
             
           </Alert>
-        )}  
+        )}   */}
             {showSuccessMessage && (
           <Alert
             // icon={<CheckIcon fontSize="inherit" />}

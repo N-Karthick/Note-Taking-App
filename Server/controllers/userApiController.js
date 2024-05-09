@@ -25,6 +25,7 @@ const jsonwebtoken_1 = __importDefault(require("jsonwebtoken"));
 app.use((0, cors_1.default)());
 app.use(express_1.default.json());
 let otpCache;
+let email;
 db_1.connection.query('SHOW TABLES', (error, results, fields) => {
     if (error) {
         console.error('Error querying tables: ', error);
@@ -61,15 +62,15 @@ app.post('/Signup', (req, res) => __awaiter(void 0, void 0, void 0, function* ()
                 return res.status(500).json({ success: false, message: 'Internal Server Error' });
             }
             console.log('results...,...............>', newUser);
-            const userId = newUser.email;
-            console.log('userId...>', userId);
+            const email = newUser.email;
+            console.log('userId...>', email);
             // Insert initial notes for the user
             const initialNotes = [
-                { user_id: userId, title: 'First Note', content: 'This is your first note.' },
-                { user_id: userId, title: 'Second Note', content: 'This is your second note.' }
+                { email: email, title: 'third Note', content: 'This is your third note.' },
+                // { user_id: userId, title: 'fourth Note', content: 'This is your fourth note.' }
             ];
             console.log("-----------------------------------------------");
-            db_1.connection.query('INSERT INTO notes (user_id, title, content) VALUES ?', [initialNotes.map(note => [note.user_id, note.title, note.content])], (err) => {
+            db_1.connection.query('INSERT INTO notes (email, title, content) VALUES ?', [initialNotes.map(note => [note.email, note.title, note.content])], (err) => {
                 if (err) {
                     console.error('Error inserting initial notes:', err);
                     return res.status(500).json({ success: false, message: 'Internal Server Error' });
@@ -106,6 +107,8 @@ app.post('/getOTP', (req, res) => {
 });
 app.post('/Login', (req, res) => __awaiter(void 0, void 0, void 0, function* () {
     const secretKey = 'qwertyuioplkjhgfdsazxcvbnmQWERTYUIOPLKJHGFDSAZXCVBNM.,1234567890!@#$%^&*()';
+    email = req.body.email;
+    console.log('email ----------?', email);
     try {
         const { email, password } = req.body;
         console.log('login--reb body--->', req.body);
@@ -132,13 +135,85 @@ app.post('/Login', (req, res) => __awaiter(void 0, void 0, void 0, function* () 
             console.log('Login In Succesfull....');
             const token = jsonwebtoken_1.default.sign({ id: user.id, email: user.email }, secretKey);
             console.log('TOKEN----->', token);
-            // Send token in response
+            email;
             res.json({ success: true, message: 'Login In Succesfull.', token, name: user.name, email: user.email, id: user.idsignup });
         }));
     }
     catch (error) {
         console.error('Error during login:', error);
         res.status(500).json({ error: 'Internal Server Error' });
+    }
+}));
+app.get('/Notes', (req, res) => __awaiter(void 0, void 0, void 0, function* () {
+    // const { email } = req.query;
+    if (!email) {
+        return res.status(400).json({ success: false, error: 'Email is required.' });
+    }
+    try {
+        const userData = yield new Promise((resolve, reject) => {
+            db_1.connection.query('SELECT email FROM signup WHERE email = ?', [email], (error, results) => {
+                if (error) {
+                    reject(error);
+                }
+                else {
+                    resolve(results);
+                }
+            });
+        });
+        const userId = email;
+        console.log("================================>userId", userId);
+        // Fetch notes for the user based on their user ID
+        const notesData = yield new Promise((resolve, reject) => {
+            db_1.connection.query('SELECT title, content FROM notes WHERE email = ?', [userId], (error, results) => {
+                if (error) {
+                    reject(error);
+                }
+                else {
+                    resolve(results);
+                }
+            });
+        });
+        if (Array.isArray(notesData)) {
+            const titles = notesData.map((note) => note.title);
+            const contents = notesData.map((note) => note.content);
+            console.log('Titles:', titles);
+            console.log('Contents:', contents);
+            res.json({ success: true, titles: titles, contents: contents });
+        }
+    }
+    catch (error) {
+        console.error('Error fetching notes:', error);
+        res.status(500).json({ success: false, error: 'Internal Server Error' });
+    }
+}));
+app.post('/addNotes', (req, res) => __awaiter(void 0, void 0, void 0, function* () {
+    const { title, note, email } = req.body;
+    console.log('-------------------------------------1');
+    console.log('------------>', req.body);
+    console.log('-------------------------------------222');
+    if (!title || !note || !email) {
+        return res.status(400).json({ success: false, error: 'Title, content, and email are required.' });
+    }
+    console.log('-------------------------------------333');
+    try {
+        const currentDate = new Date().toISOString().slice(0, 19).replace('T', ' '); // Get current date and time in MySQL format
+        console.log('-------------------------------------4444');
+        // Insert the new note into the notes table
+        const insertQuery = 'INSERT INTO notes (email, title, content, created_at, updated_at) VALUES (?, ?, ?, ?, ?)';
+        db_1.connection.query(insertQuery, [email, title, note, currentDate, currentDate], (error, results) => {
+            if (error) {
+                console.error('Error inserting note:', error);
+                res.status(500).json({ success: false, error: 'Error inserting note.' });
+            }
+            else {
+                console.log('Note inserted successfully.');
+                res.status(200).json({ success: true, message: 'Note inserted successfully.' });
+            }
+        });
+    }
+    catch (error) {
+        console.error('Error adding note:', error);
+        res.status(500).json({ success: false, error: 'Internal Server Error' });
     }
 }));
 app.listen(port, () => {

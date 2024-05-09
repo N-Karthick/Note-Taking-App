@@ -4,6 +4,7 @@ import {
   SIGNUP_REQUEST, SIGNUP_SUCCESS, SIGNUP_FAILURE,
   SIGNUPRESPONSE_SUCCESS, SIGNUPRESPONSE_FAILURE,
   LOGINRESPONSE_SUCCESS, LOGINRESPONSE_FAILURE,
+  NOTESRESPONSE_SUCCESS,NOTESRESPONSE_FAILURE
 
 } from './actionTypes'
 
@@ -15,6 +16,7 @@ const initialState = {
   loading: false,
   signinResponse: { message: '' },
   loginResponse: { message: '' },
+  notesResponse:[]
 
 };
 
@@ -56,6 +58,12 @@ const userTrip = (state = initialState, action) => {
         loginResponse: { message: action.payload.message },
         error: null,
       };
+      case NOTESRESPONSE_SUCCESS:
+        return{
+          ...state,
+          notesResponse:{message: action.payload.notesData},
+          error:null,
+        }
     case SIGNUPRESPONSE_FAILURE:
       return {
         ...state,
