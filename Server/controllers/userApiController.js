@@ -20,6 +20,7 @@ require('dotenv').config;
 const bcrypt_1 = __importDefault(require("bcrypt"));
 const app = (0, express_1.default)();
 const port = '4000';
+const jsonwebtoken_1 = __importDefault(require("jsonwebtoken"));
 // Use the cors middleware
 app.use((0, cors_1.default)());
 app.use(express_1.default.json());
@@ -54,13 +55,28 @@ app.post('/Signup', (req, res) => __awaiter(void 0, void 0, void 0, function* ()
         }
         const hashedPassword = yield bcrypt_1.default.hash(password, 7);
         const newUser = { name, email, phone, password };
-        db_1.connection.query('INSERT INTO signup SET ?', newUser, (err) => {
+        db_1.connection.query('INSERT INTO signup SET ?', newUser, (err, result) => {
             if (err) {
                 console.error('Error inserting new user:', err);
                 return res.status(500).json({ success: false, message: 'Internal Server Error' });
             }
-            console.log('new user inserted..');
-            res.status(201).json({ success: true, message: 'User signed up successfully!...Please Login' });
+            console.log('results...,...............>', newUser);
+            const userId = newUser.email;
+            console.log('userId...>', userId);
+            // Insert initial notes for the user
+            const initialNotes = [
+                { user_id: userId, title: 'First Note', content: 'This is your first note.' },
+                { user_id: userId, title: 'Second Note', content: 'This is your second note.' }
+            ];
+            console.log("-----------------------------------------------");
+            db_1.connection.query('INSERT INTO notes (user_id, title, content) VALUES ?', [initialNotes.map(note => [note.user_id, note.title, note.content])], (err) => {
+                if (err) {
+                    console.error('Error inserting initial notes:', err);
+                    return res.status(500).json({ success: false, message: 'Internal Server Error' });
+                }
+                console.log('Initial notes inserted.');
+                res.status(201).json({ success: true, message: 'User signed up successfully!...Please Login' });
+            });
         });
     }));
 }));
@@ -89,6 +105,7 @@ app.post('/getOTP', (req, res) => {
     }));
 });
 app.post('/Login', (req, res) => __awaiter(void 0, void 0, void 0, function* () {
+    const secretKey = 'qwertyuioplkjhgfdsazxcvbnmQWERTYUIOPLKJHGFDSAZXCVBNM.,1234567890!@#$%^&*()';
     try {
         const { email, password } = req.body;
         console.log('login--reb body--->', req.body);
@@ -113,7 +130,10 @@ app.post('/Login', (req, res) => __awaiter(void 0, void 0, void 0, function* () 
                 return res.status(401).json({ success: false, error: 'Incorrect password.' });
             }
             console.log('Login In Succesfull....');
-            res.json({ message: 'Login In Succesfull.' });
+            const token = jsonwebtoken_1.default.sign({ id: user.id, email: user.email }, secretKey);
+            console.log('TOKEN----->', token);
+            // Send token in response
+            res.json({ success: true, message: 'Login In Succesfull.', token, name: user.name, email: user.email, id: user.idsignup });
         }));
     }
     catch (error) {

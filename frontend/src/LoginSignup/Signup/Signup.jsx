@@ -1,5 +1,5 @@
 import React, { useState } from 'react';
-import { Link } from 'react-router-dom';
+import { Link, Navigate, useNavigate } from 'react-router-dom';
 import { useDispatch, useSelector } from 'react-redux';
 import { getOtp, userSigninDetails } from '../../redux/action';
 import { Alert } from '@mui/material';
@@ -8,6 +8,7 @@ import '../Signup/Signup.css';
 
 const Signup = () => {
   const dispatch = useDispatch();
+  const navigate = useNavigate();
   const loading = useSelector((state) => state.loading);
   const successMessage = useSelector((state) => state.signinResponse);
   const error = useSelector((state) => state.error);
@@ -56,8 +57,9 @@ const Signup = () => {
           otp,
         }),
         setShowSuccessMessage(true),
-      setTimeout(() => {
+      setTimeout(() => { 
         setShowSuccessMessage(false);
+        navigate('/')
       }, 2000)
       );
     }
@@ -118,12 +120,13 @@ const Signup = () => {
             {successMessage.message}
           </Alert>
         )}
-        {(error && !showSuccessMessage) && (
+        { error && (
           <Alert
             sx={{ zIndex: 10, display: 'flex', position: 'absolute', left: '80px', bottom: '521px' }}
             severity="warning"
           >
             Email or Mobile Number Already Exists...
+            
           </Alert>
         )}
 

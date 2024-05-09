@@ -6,6 +6,7 @@ require('dotenv').config;
 import bcrypt from 'bcrypt';
 const app = express();
 const port = '4000';
+import jwt from 'jsonwebtoken';
 
 // Use the cors middleware
 app.use(cors());
@@ -54,16 +55,32 @@ app.post('/Signup', async (req: Request, res: Response) => {
     const hashedPassword = await bcrypt.hash(password, 7);
 
     const newUser = { name, email, phone, password };
-    connection.query('INSERT INTO signup SET ?', newUser, (err) => {
-      if (err) {
-        console.error('Error inserting new user:', err);
-        return res.status(500).json({ success: false, message: 'Internal Server Error' });
-      }
-      console.log('new user inserted..')
-      res.status(201).json({ success: true, message: 'User signed up successfully!...Please Login' });
+    connection.query('INSERT INTO signup SET ?', newUser, (err,result) => {
+        if (err) {
+            console.error('Error inserting new user:', err);
+            return res.status(500).json({ success: false, message: 'Internal Server Error' });
+        }
+        console.log('results...,...............>',newUser)
+        const userId = newUser.email;
+        console.log('userId...>',userId)
+        // Insert initial notes for the user
+        const initialNotes = [
+            { user_id: userId, title: 'First Note', content: 'This is your first note.' },
+            { user_id: userId, title: 'Second Note', content: 'This is your second note.' }
+          ];
+console.log("-----------------------------------------------")
+        connection.query('INSERT INTO notes (user_id, title, content) VALUES ?', [initialNotes.map(note => [note.user_id, note.title, note.content])], (err) => {
+            if (err) {
+                console.error('Error inserting initial notes:', err);
+                return res.status(500).json({ success: false, message: 'Internal Server Error' });
+            }
+            console.log('Initial notes inserted.');
+            res.status(201).json({ success: true, message: 'User signed up successfully!...Please Login' });
+        });
+    });
     });
   });
-});
+
 
 
 
@@ -95,6 +112,8 @@ app.post('/getOTP', (req: Request, res: Response) => {
 });
 
 app.post('/Login', async (req: Request, res: Response) => {
+  const secretKey = 'qwertyuioplkjhgfdsazxcvbnmQWERTYUIOPLKJHGFDSAZXCVBNM.,1234567890!@#$%^&*()';
+
   try {
     const { email, password } = req.body;
 console.log('login--reb body--->',req.body)
@@ -123,15 +142,67 @@ console.log('login--reb body--->',req.body)
          console.log('login--Incorrect password.--->')
         return res.status(401).json({ success: false, error: 'Incorrect password.' });
       }
+
       console.log('Login In Succesfull....')
-      res.json({ message: 'Login In Succesfull.' });
+      const token = jwt.sign({ id: user.id, email: user.email }, secretKey);
+console.log('TOKEN----->',token); 
+      // Send token in response
+      res.json({ success: true,message: 'Login In Succesfull.', token,name: user.name, email: user.email,id:user.idsignup});
+ 
     });
   } catch (error) {
     console.error('Error during login:', error);
     res.status(500).json({ error: 'Internal Server Error' });
   }
 });
- 
+
+
+app.get('/Notes', async (req: Request, res: Response) => {
+  const { email } = req.query;
+
+  if (!email) {
+    return res.status(400).json({ success: false, error: 'Email is required.' });
+  }
+
+  try {
+    // Get the user ID using the email
+    const userData = await new Promise((resolve, reject) => {
+      connection.query('SELECT email FROM signup WHERE email = ?', [email], (error, results) => {
+        if (error) {
+          reject(error);
+        } else {
+          resolve(results);
+        }
+      });
+    });
+
+    // if (userData.length == 0) {
+    //   return res.status(404).json({ success: false, error: 'User not found.' });
+    // }
+
+    // const userId = userData[0].email;
+    const userId = email;
+
+    // Fetch notes for the user based on their user ID
+    const notesData = await new Promise((resolve, reject) => {
+      connection.query('SELECT title, content FROM notes WHERE user_id = ?', [userId], (error, results) => {
+        if (error) {
+          reject(error);
+        } else {
+          resolve(results);
+        }
+      });
+    });
+console.log('-------------------------------------------------');
+console.log('NOTES============>',notesData)
+    res.json({ success: true, notes: notesData });
+  } catch (error) {
+    console.error('Error fetching notes:', error);
+    res.status(500).json({ success: false, error: 'Internal Server Error' });
+  }
+});
+
+
 
 
 

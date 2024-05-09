@@ -4,11 +4,10 @@ import {
   OTP_REQUEST, OTP_SUCCESS, OTP_FAILURE,
   TRIP_REQUEST, TRIP_SUCCESS, TRIP_FAILURE,
   LOGIN_REQUEST, LOGIN_SUCCESS, LOGIN_FAILURE,
-  SET_PASSENGER_COUNT,
-  SET_TRIP_DETAILS,
   SIGNUP_SUCCESS, SIGNUP_REQUEST, SIGNUP_FAILURE,
-  SIGNUPRESPONSE_SUCCESS,
-  SIGNUPRESPONSE_FAILURE
+  SIGNUPRESPONSE_SUCCESS,  SIGNUPRESPONSE_FAILURE,
+  LOGINRESPONSE_SUCCESS,  LOGINRESPONSE_FAILURE,
+  NOTESRESPONSE_REQUEST,NOTESRESPONSE_SUCCESS,NOTESRESPONSE_FAILURE
 } from './actionTypes'
 
 const axiosInstance = axios.create({
@@ -17,24 +16,13 @@ const axiosInstance = axios.create({
 
 const otpRequest = () => ({ type: OTP_REQUEST });
 const otpSuccess = (user) => ({ type: OTP_SUCCESS, payload: user });
-const otpFailure = (error) => ({ type: OTP_FAILURE, payload: error });
-
-const tripRequest = () => ({ type: TRIP_REQUEST });
-const tripSuccess = (tripdetails) => ({ type: TRIP_SUCCESS, payload: tripdetails });
-const tripFailure = (error) => ({ type: TRIP_FAILURE, payload: error });
-
-const SigupSuccess = (userDetails) => ({ type: SIGNUP_SUCCESS, payload: userDetails });
-const SigupFailure = (error) => ({ type: SIGNUP_FAILURE, payload: error.message });
+const loginRequest = () => ({ type: LOGIN_REQUEST });
 const SigupRequest = () => ({ type: SIGNUP_REQUEST });
+const NotesResponseRequest = () => ({ type: NOTESRESPONSE_REQUEST });
 
 const loginSuccess = (loginDetails) => ({ type: LOGIN_SUCCESS, payload: loginDetails });
-const loginFailure = (error) => ({ type: LOGIN_FAILURE, payload: error });
-const loginRequest = () => ({ type: LOGIN_REQUEST });
 
-export const setPassengerCount = (passengerCounts) => ({
-  type: SET_PASSENGER_COUNT,
-  payload: passengerCounts,
-});
+
 export const SigupResponseSuccess = (message) => ({
   type: SIGNUPRESPONSE_SUCCESS,
   payload: { message },
@@ -45,35 +33,42 @@ export const SigupResponseFailure = (error) => ({
   payload: { error },
 });
 
-export const setTripDetails = (tripDetails) => ({
-  type: SET_TRIP_DETAILS,
-  payload: tripDetails,
+export const LoginResponseSuccess = (message) => ({
+  type: LOGINRESPONSE_SUCCESS,
+  payload: { message },
 });
 
-export const userTripDetails = (credentials) => {
-  return async (dispatch) => {
-    dispatch(tripRequest());
-    try {
-      const response = await axiosInstance.post('/tripdetails', credentials);
+export const LoginResponseFailure = (error) => ({
+  type: LOGINRESPONSE_FAILURE,
+  payload: { error },
+});
 
-      dispatch(tripSuccess(response.data));
-      console.log("RES====>", response.data)
-    } catch (error) {
-      dispatch(tripFailure(error.message));
-    }
-  };
-};
+export const NotesResponseSuccess = (notesData) => ({
+  type: NOTESRESPONSE_SUCCESS,
+  payload: { notesData },
+});
+
+export const NotesResponseFailure = (error) => ({
+  type: NOTESRESPONSE_FAILURE,
+  payload: { error },
+});
 
 export const userLoginDetails = (credentials) => {
   return async (dispatch) => {
     dispatch(loginRequest());
     try {
       const response = await axiosInstance.post('/Login', credentials);
-
       dispatch(loginSuccess(response.data));
+      const message = response.data.message;
+      dispatch(LoginResponseSuccess(message));
       console.log("RES====>", response.data)
+      const {email , name, token,id } = response.data;    
+      localStorage.setItem('token', token);
+      localStorage.setItem('email',email);
+      localStorage.setItem('userId',id);
     } catch (error) {
-      dispatch(loginFailure(error.message));
+      dispatch(LoginResponseFailure(error.response.data.error));
+      console.log('-----LoginResponseFailure---->',error.response.data.error)
     }
   };
 };
@@ -110,4 +105,24 @@ export const userSigninDetails = (userDetails) => {
     }
   }
 }
+
+export const userNotes = () => {
+  return async (dispatch, getState) => {
+    dispatch(NotesResponseRequest());
+    try {
+      const token = getState().token; 
+      const config = {
+        headers: {
+          Authorization: `Bearer ${token}`, 
+        },
+      };
+      const response = await axiosInstance.get('/Notes', config);
+      const notes = response.data.notes; 
+      dispatch(NotesResponseSuccess(notes));
+    } catch (error) {
+      dispatch(NotesResponseFailure(error.response.data.error));
+      console.log('-----NotesResponseFailure---->', error.response.data.error);
+    }
+  };
+};
 

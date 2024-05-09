@@ -3,8 +3,9 @@ var __importDefault = (this && this.__importDefault) || function (mod) {
     return (mod && mod.__esModule) ? mod : { "default": mod };
 };
 Object.defineProperty(exports, "__esModule", { value: true });
+exports.secretKey = void 0;
 const jsonwebtoken_1 = __importDefault(require("jsonwebtoken"));
-const secretKey = 'qwertyuioplkjhgfdsazxcvbnmQWERTYUIOPLKJHGFDSAZXCVBNM.,1234567890!@#$%^&*()';
+exports.secretKey = 'qwertyuioplkjhgfdsazxcvbnmQWERTYUIOPLKJHGFDSAZXCVBNM.,1234567890!@#$%^&*()';
 const authenticateToken = (req, res, next) => {
     const token = req.headers.authorization;
     console.log('Token---->', token);
@@ -13,7 +14,7 @@ const authenticateToken = (req, res, next) => {
     }
     const [, actualToken] = token.split(' ');
     try {
-        const decodedToken = jsonwebtoken_1.default.verify(actualToken, secretKey);
+        const decodedToken = jsonwebtoken_1.default.verify(actualToken, exports.secretKey);
         next();
     }
     catch (error) {
