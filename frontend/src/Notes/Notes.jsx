@@ -7,6 +7,7 @@ import EditIcon from '@mui/icons-material/Edit';
 import { addNotes, userNotes, updateNote, deleteNote } from '../redux/action';
 import DeleteIcon from '@mui/icons-material/Delete';
 import CheckIcon from '@mui/icons-material/Check';
+import { Pagination } from '@mui/material';
 
 const Notes = () => {
   const dispatch = useDispatch();
@@ -20,6 +21,8 @@ const Notes = () => {
   const [title, setTitle] = useState('');
   const [note, setNote] = useState('');
   const [showSuccessMessage, setShowSuccessMessage] = useState(false);
+  const [page, setPage] = useState(1);
+  const [itemsPerPage, setItemsPerPage] = useState(5);
 
   const Titles = notes?.message?.titles ?? [];
   const Notes = notes?.message?.contents ?? [];
@@ -87,6 +90,13 @@ const Notes = () => {
     setAddNotes(false);
   };
 
+  const handlePageChange = (event, newPage) => {
+    setPage(newPage);
+  };
+  
+  const startIndex = (page - 1) * itemsPerPage;
+  const paginatedTitles = Titles.slice(startIndex, startIndex + itemsPerPage);
+  
   return (
     <div>
       <Card sx={{ width: '100%', height: '41rem', backgroundColor: darkMode ? '#545454' : '#cbdff38f', margin: '0px' }}>
@@ -150,6 +160,11 @@ const Notes = () => {
                 <EditIcon sx={{ cursor: 'pointer' }} onClick={handleEditNote} />
               </div>
             ))}
+             <Pagination
+        count={Math.ceil(Titles.length / itemsPerPage)}
+        page={page}
+        onChange={handlePageChange}
+      />
           </div>
           <div style={{ width: '60rem', height: '35rem', border: '2.5px solid #d1d1d1', marginLeft: '0.7rem' }}>
             <h2 style={{ color: darkMode ? 'white' : 'black', display: 'flex', justifyContent: 'center' }}>
