@@ -61,7 +61,7 @@ Getting Started
 
 Clone the repository:
 
-git clone https://github.com/your-username/note-taking-app.git
+git clone https://github.com/N-Karthick/Note-Taking-App
 or
 download the code in Zip formate and Extract it 
 In front End to Start
