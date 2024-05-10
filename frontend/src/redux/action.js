@@ -5,10 +5,12 @@ import {
   TRIP_REQUEST, TRIP_SUCCESS, TRIP_FAILURE,
   LOGIN_REQUEST, LOGIN_SUCCESS, LOGIN_FAILURE,
   SIGNUP_SUCCESS, SIGNUP_REQUEST, SIGNUP_FAILURE,
-  SIGNUPRESPONSE_SUCCESS,  SIGNUPRESPONSE_FAILURE,
-  LOGINRESPONSE_SUCCESS,  LOGINRESPONSE_FAILURE,
-  NOTESRESPONSE_REQUEST,NOTESRESPONSE_SUCCESS,NOTESRESPONSE_FAILURE,
-  ADDNOTERESPONSE_REQUEST,ADDNOTERESPONSE_SUCCESS,ADDNOTERESPONSE_FAILURE
+  SIGNUPRESPONSE_SUCCESS, SIGNUPRESPONSE_FAILURE,
+  LOGINRESPONSE_SUCCESS, LOGINRESPONSE_FAILURE,
+  NOTESRESPONSE_REQUEST, NOTESRESPONSE_SUCCESS, NOTESRESPONSE_FAILURE,
+  ADDNOTERESPONSE_REQUEST, ADDNOTERESPONSE_SUCCESS, ADDNOTERESPONSE_FAILURE,
+  UPDATENOTERESPONSE_REQUEST, UPDATENOTERESPONSE_SUCCESS, UPDATENOTERESPONSE_FAILURE,
+  DELETENOTERESPONSE_REQUEST,DELETENOTERESPONSE_SUCCESS,DELETENOTERESPONSE_FAILURE
 } from './actionTypes'
 
 const axiosInstance = axios.create({
@@ -16,7 +18,9 @@ const axiosInstance = axios.create({
 });
 
 const otpRequest = () => ({ type: OTP_REQUEST });
-const addNoteResponseRequest = () => ({ type:  ADDNOTERESPONSE_REQUEST });
+const addNoteResponseRequest = () => ({ type: ADDNOTERESPONSE_REQUEST });
+const updateNoteResponseRequest = () => ({ type: UPDATENOTERESPONSE_REQUEST });
+const deleteNoteResponseRequest = () => ({type : DELETENOTERESPONSE_REQUEST})
 const otpSuccess = (user) => ({ type: OTP_SUCCESS, payload: user });
 const loginRequest = () => ({ type: LOGIN_REQUEST });
 const SigupRequest = () => ({ type: SIGNUP_REQUEST });
@@ -55,13 +59,33 @@ export const NotesResponseFailure = (error) => ({
   payload: { error },
 });
 
-export const AddNotesResponseSuccess = (addNotesData) => ({
+export const AddNotesResponseSuccess = (addNoteResponse) => ({
   type: ADDNOTERESPONSE_SUCCESS,
-  payload: { addNotesData },
+  payload: { addNoteResponse },
+});
+
+export const UpdateNotesResponseSuccess = (updateNoteResponse) => ({
+  type: ADDNOTERESPONSE_SUCCESS,
+  payload: { updateNoteResponse },
+});
+
+export const DeleteNotesResponseSuccess = (deleteNotesData) => ({
+  type: DELETENOTERESPONSE_SUCCESS,
+  payload: { deleteNotesData },
 });
 
 export const AddNotesResponseFailure = (error) => ({
   type: ADDNOTERESPONSE_FAILURE,
+  payload: { error },
+});
+
+export const UpdateNotesResponseFailure = (error) => ({
+  type: ADDNOTERESPONSE_FAILURE,
+  payload: { error },
+});
+
+export const DeleteNotesResponseFailure = (error) => ({
+  type: DELETENOTERESPONSE_FAILURE,
   payload: { error },
 });
 
@@ -74,13 +98,13 @@ export const userLoginDetails = (credentials) => {
       const message = response.data.message;
       dispatch(LoginResponseSuccess(message));
       console.log("RES====>", response.data)
-      const {email , name, token,id } = response.data;    
+      const { email, name, token, id } = response.data;
       localStorage.setItem('token', token);
-      localStorage.setItem('email',email);
-      localStorage.setItem('userId',id);
+      localStorage.setItem('email', email);
+      localStorage.setItem('userId', id);
     } catch (error) {
       dispatch(LoginResponseFailure(error.response.data.error));
-      console.log('-----LoginResponseFailure---->',error.response.data.error)
+      console.log('-----LoginResponseFailure---->', error.response.data.error)
     }
   };
 };
@@ -91,14 +115,14 @@ export const getOtp = (credentials) => {
     dispatch(otpRequest());
     try {
       const response = await axiosInstance.post('/getOTP', credentials);
-      dispatch(otpSuccess(response.data));  
+      dispatch(otpSuccess(response.data));
       const message = response.data.message;
-      console.log('Response from backend:', message); 
+      console.log('Response from backend:', message);
       dispatch(SigupResponseSuccess(message));
     } catch (error) {
       // dispatch(otpFailure(error.message));
       dispatch(SigupResponseFailure(error.response.data.error));
-      console.log('-----SigupResponseFailure---->',error.response.data.error)
+      console.log('-----SigupResponseFailure---->', error.response.data.error)
     }
   };
 };
@@ -109,11 +133,11 @@ export const userSigninDetails = (userDetails) => {
     try {
       const response = await axiosInstance.post('/Signup', userDetails);
       const message = response.data.message;
-      console.log('Response from backend:', message); 
+      console.log('Response from backend:', message);
       dispatch(SigupResponseSuccess(message));
     } catch (error) {
       dispatch(SigupResponseFailure(error.response.data.error));
-      console.log('-----SigupResponseFailure---->',error.response.data.error)
+      console.log('-----SigupResponseFailure---->', error.response.data.error)
     }
   }
 }
@@ -121,18 +145,18 @@ export const userSigninDetails = (userDetails) => {
 export const userNotes = (email) => {
   return async (dispatch, getState) => {
     dispatch(NotesResponseRequest());
-    console.log("============1",NotesResponseRequest)
     try {
-      const token = getState().token; 
+      const token = getState().token;
       const config = {
         headers: {
-          Authorization: `Bearer ${token}`, 
-        } };
-      
-    console.log("============2",NotesResponseRequest);
+          Authorization: `Bearer ${token}`,
+        }
+      };
+
       const response = await axiosInstance.get('/Notes', config);
-      const notes = response.data; 
-      console.log("============response",response,notes);
+      const notes = response.data;
+      // const message =response.data.message
+      //console.log("============response", message );
       dispatch(NotesResponseSuccess(notes));
     } catch (error) {
       dispatch(NotesResponseFailure(error.response.data.error));
@@ -146,17 +170,18 @@ export const addNotes = (title, note) => {
     dispatch(addNoteResponseRequest());
 
     try {
-      const token = getState().token; 
+      const token = getState().token;
       const email = localStorage.getItem('email');
       const config = {
         headers: {
           Authorization: `Bearer ${token}`,
         },
       };
-      
-      const data = { title, note, email }; 
-      const response = await axiosInstance.post('/addNotes', data, config); 
-      dispatch(AddNotesResponseSuccess());
+
+      const data = { title, note, email };
+      const response = await axiosInstance.post('/addNotes', data, config);
+      const message = response.data
+      dispatch(AddNotesResponseSuccess(message));
       console.log('Notes added successfully:', response.data);
     } catch (error) {
       dispatch(AddNotesResponseFailure(error.response.data.error));
@@ -164,3 +189,54 @@ export const addNotes = (title, note) => {
     }
   };
 };
+
+export const updateNote = (title, note) => {
+  return async (dispatch, getState) => {
+    dispatch(updateNoteResponseRequest());
+
+    try {
+      const token = getState().token;
+      const config = {
+        headers: {
+          Authorization: `Bearer ${token}`,
+        },
+      };
+
+      const UpdateNoteData = { title, note };
+      const response = await axiosInstance.put('/UpdateNote', UpdateNoteData, config);
+     const message = response.data;
+      dispatch(UpdateNotesResponseSuccess(message));
+      console.log('--------------->',message)
+    } catch (error) {
+      dispatch(UpdateNotesResponseFailure(error.response.data.error));
+      console.log('Error updating note:', error.response.data.error);
+    }
+  };
+};
+
+export const deleteNote = (DeleteNotes) => {
+  return async (dispatch, getState) => {
+    dispatch(deleteNoteResponseRequest());
+
+    try {
+      const token = getState().token;
+      const config = {
+        headers: {
+          Authorization: `Bearer ${token}`,
+        },
+      };
+
+      const response = await axiosInstance.delete('/DeleteNote', {
+        headers: config.headers,
+        data: { DeleteNotes }, // Pass the DeleteNotes object here
+      });
+
+      dispatch(DeleteNotesResponseSuccess());
+      console.log('Note deleted successfully:', response.data);
+    } catch (error) {
+      dispatch(DeleteNotesResponseFailure(error.response.data.error));
+      console.log('Error deleting note:', error.response.data.error);
+    }
+  };
+};
+

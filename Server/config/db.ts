@@ -9,7 +9,6 @@ export const connection: Connection = mysql.createConnection({
   database: process.env.DATABASE || 'noteapp',
 });
 
-// Connect to the database
 connection.connect((err) => {
   if (err) {
     console.error('Error connecting to MySQL: ', err);

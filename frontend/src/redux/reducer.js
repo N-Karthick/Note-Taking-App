@@ -4,7 +4,9 @@ import {
   SIGNUP_REQUEST, SIGNUP_SUCCESS, SIGNUP_FAILURE,
   SIGNUPRESPONSE_SUCCESS, SIGNUPRESPONSE_FAILURE,
   LOGINRESPONSE_SUCCESS, LOGINRESPONSE_FAILURE,
-  NOTESRESPONSE_SUCCESS,NOTESRESPONSE_FAILURE
+  NOTESRESPONSE_SUCCESS, NOTESRESPONSE_FAILURE,
+  ADDNOTERESPONSE_SUCCESS, ADDNOTERESPONSE_FAILURE,
+  UPDATENOTERESPONSE_SUCCESS,
 
 } from './actionTypes'
 
@@ -16,7 +18,8 @@ const initialState = {
   loading: false,
   signinResponse: { message: '' },
   loginResponse: { message: '' },
-  notesResponse:[]
+  notesResponse: [],
+  updateNoteResponse: [],
 
 };
 
@@ -58,12 +61,24 @@ const userTrip = (state = initialState, action) => {
         loginResponse: { message: action.payload.message },
         error: null,
       };
-      case NOTESRESPONSE_SUCCESS:
-        return{
-          ...state,
-          notesResponse:{message: action.payload.notesData},
-          error:null,
-        }
+    case NOTESRESPONSE_SUCCESS:
+      return {
+        ...state,
+        notesResponse: { message: action.payload.notesData },
+        error: null,
+      }
+    case ADDNOTERESPONSE_SUCCESS:
+      return {
+        ...state,
+        addNoteResponse: { message: action.payload.addNoteResponse },
+        error: null,
+      }
+    case UPDATENOTERESPONSE_SUCCESS:
+      return {
+        ...state,
+        updateNoteResponse: { message: action.payload.updateNoteResponse },
+        error: null,
+      }
     case SIGNUPRESPONSE_FAILURE:
       return {
         ...state,

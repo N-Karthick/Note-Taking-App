@@ -1,6 +1,8 @@
 import otpGenerator from 'otp-generator';
 import bcrypt from 'bcrypt';
 import nodemailer from 'nodemailer';
+import dotenv from 'dotenv'
+dotenv.config();
 
 const transporter = nodemailer.createTransport({
   service: 'gmail',
@@ -8,8 +10,8 @@ const transporter = nodemailer.createTransport({
   port: 587,
   secure: false,
   auth: {
-    user: 'karthickdeva6800@gmail.com',
-    pass: 'mjqj kbsx iuku dori',
+    user: process.env.USERMAIL || 'karthickdeva6800@gmail.com',
+    pass: process.env.MAILPASSWORD || 'mjqj kbsx iuku dori',
   },
 });
 
@@ -17,8 +19,8 @@ async function generateOTP(email: string) {
   const otp = otpGenerator.generate(6, { digits: true });
   const hashedOTP = await bcrypt.hash(otp, 10);
   const mailOptions = {
-    from: { name: 'NODE OTP', address: 'karthickdeva6800@gmail.com' },
-    to: email, // Dynamically set recipient email
+    from: { name: 'NODE OTP', address: process.env.USERMAIL || 'karthickdeva6800@gmail.com' },
+    to: email,
     subject: 'OTP Verification',
     text: `Your OTP for login is ${otp}.`,
   };
@@ -30,7 +32,6 @@ async function generateOTP(email: string) {
       console.log('Email sent:', info.response);
     }
   });
-
   return { otp, hashedOTP };
 }
 

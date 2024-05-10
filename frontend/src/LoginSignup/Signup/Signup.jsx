@@ -12,9 +12,6 @@ const Signup = () => {
   const loading = useSelector((state) => state.loading);
   const successMessage = useSelector((state) => state.signinResponse);
   const error = useSelector((state) => state.error);
-  console.log("--->", successMessage)
-  console.log("--->", error)
-
   const [name, setName] = useState('');
   const [email, setEmail] = useState('');
   const [phone, setPhone] = useState('');
@@ -57,10 +54,10 @@ const Signup = () => {
           otp,
         }),
         setShowSuccessMessage(true),
-      setTimeout(() => { 
-        setShowSuccessMessage(false);
-        navigate('/')
-      }, 2000)
+        setTimeout(() => {
+          setShowSuccessMessage(false);
+          navigate('/')
+        }, 2000)
       );
     }
   };
@@ -115,26 +112,22 @@ const Signup = () => {
         {showSuccessMessage && (
           <Alert
             icon={<CheckIcon fontSize="inherit" />}
-            sx={{ zIndex: 10, display: 'flex', position: 'absolute', left: '80px', bottom: '563px' }}
-          >
+            sx={{ zIndex: 10, display: 'flex', position: 'absolute', left: '80px', bottom: '563px' }}>
             {successMessage.message}
           </Alert>
         )}
-        { error && (
+        {/* {error && (
           <Alert
             sx={{ zIndex: 10, display: 'flex', position: 'absolute', left: '80px', bottom: '521px' }}
-            severity="warning"
-          >
+            severity="warning" >
             Email or Mobile Number Already Exists...
-            
           </Alert>
-        )}
+        )} */}
 
         {showErrorAlert && (
           <Alert
             sx={{ zIndex: 10, display: 'flex', position: 'absolute', left: '80px', bottom: '420px' }}
-            severity="warning"
-          >
+            severity="warning">
             All Fields Required...
           </Alert>
         )}

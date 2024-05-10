@@ -13,15 +13,14 @@ var __importDefault = (this && this.__importDefault) || function (mod) {
 };
 Object.defineProperty(exports, "__esModule", { value: true });
 const express_1 = __importDefault(require("express"));
-const cors_1 = __importDefault(require("cors")); // Import the cors middleware
+const cors_1 = __importDefault(require("cors"));
 const db_1 = require("../config/db");
 const otp_1 = __importDefault(require("../auth/otp"));
-require('dotenv').config;
+const jsonwebtoken_1 = __importDefault(require("jsonwebtoken"));
 const bcrypt_1 = __importDefault(require("bcrypt"));
+require('dotenv').config;
 const app = (0, express_1.default)();
 const port = '4000';
-const jsonwebtoken_1 = __importDefault(require("jsonwebtoken"));
-// Use the cors middleware
 app.use((0, cors_1.default)());
 app.use(express_1.default.json());
 let otpCache;
@@ -46,7 +45,6 @@ app.post('/Signup', (req, res) => __awaiter(void 0, void 0, void 0, function* ()
         if (results.length > 0) {
             return res.status(400).json({ success: false, error: 'Email already exists. Please login.' });
         }
-        // Verify OTP
         if (!otpCache) {
             return res.status(400).json({ success: false, error: 'OTP cache is missing. Please try again.' });
         }
@@ -55,21 +53,16 @@ app.post('/Signup', (req, res) => __awaiter(void 0, void 0, void 0, function* ()
             return res.status(400).json({ success: false, error: 'Incorrect OTP. Please try again.' });
         }
         const hashedPassword = yield bcrypt_1.default.hash(password, 7);
-        const newUser = { name, email, phone, password };
+        const newUser = { name, email, phone, password: hashedPassword };
         db_1.connection.query('INSERT INTO signup SET ?', newUser, (err, result) => {
             if (err) {
                 console.error('Error inserting new user:', err);
                 return res.status(500).json({ success: false, message: 'Internal Server Error' });
             }
-            console.log('results...,...............>', newUser);
             const email = newUser.email;
-            console.log('userId...>', email);
-            // Insert initial notes for the user
             const initialNotes = [
                 { email: email, title: 'third Note', content: 'This is your third note.' },
-                // { user_id: userId, title: 'fourth Note', content: 'This is your fourth note.' }
             ];
-            console.log("-----------------------------------------------");
             db_1.connection.query('INSERT INTO notes (email, title, content) VALUES ?', [initialNotes.map(note => [note.email, note.title, note.content])], (err) => {
                 if (err) {
                     console.error('Error inserting initial notes:', err);
@@ -108,10 +101,9 @@ app.post('/getOTP', (req, res) => {
 app.post('/Login', (req, res) => __awaiter(void 0, void 0, void 0, function* () {
     const secretKey = 'qwertyuioplkjhgfdsazxcvbnmQWERTYUIOPLKJHGFDSAZXCVBNM.,1234567890!@#$%^&*()';
     email = req.body.email;
-    console.log('email ----------?', email);
     try {
         const { email, password } = req.body;
-        console.log('login--reb body--->', req.body);
+        console.log('------------------', email, password);
         if (!email || !password) {
             return res.status(400).json({ success: false, error: 'Email and password are required.' });
         }
@@ -124,17 +116,14 @@ app.post('/Login', (req, res) => __awaiter(void 0, void 0, void 0, function* () 
                 return res.status(404).json({ success: false, error: 'User not found. Please sign up.' });
             }
             const user = results[0];
-            console.log('user==>', user);
-            console.log('password==>', password, user.password);
+            console.log('------------------user', user);
             const passwordMatch = yield bcrypt_1.default.compare(password, user.password);
-            console.log('user passwordMatch==>', yield bcrypt_1.default.compare(password, user.password));
-            if (user.password !== password) {
-                console.log('login--Incorrect password.--->');
+            console.log('------------------passwordMatch', passwordMatch);
+            if (passwordMatch) {
                 return res.status(401).json({ success: false, error: 'Incorrect password.' });
             }
             console.log('Login In Succesfull....');
             const token = jsonwebtoken_1.default.sign({ id: user.id, email: user.email }, secretKey);
-            console.log('TOKEN----->', token);
             email;
             res.json({ success: true, message: 'Login In Succesfull.', token, name: user.name, email: user.email, id: user.idsignup });
         }));
@@ -145,7 +134,6 @@ app.post('/Login', (req, res) => __awaiter(void 0, void 0, void 0, function* () 
     }
 }));
 app.get('/Notes', (req, res) => __awaiter(void 0, void 0, void 0, function* () {
-    // const { email } = req.query;
     if (!email) {
         return res.status(400).json({ success: false, error: 'Email is required.' });
     }
@@ -161,8 +149,6 @@ app.get('/Notes', (req, res) => __awaiter(void 0, void 0, void 0, function* () {
             });
         });
         const userId = email;
-        console.log("================================>userId", userId);
-        // Fetch notes for the user based on their user ID
         const notesData = yield new Promise((resolve, reject) => {
             db_1.connection.query('SELECT title, content FROM notes WHERE email = ?', [userId], (error, results) => {
                 if (error) {
@@ -176,9 +162,7 @@ app.get('/Notes', (req, res) => __awaiter(void 0, void 0, void 0, function* () {
         if (Array.isArray(notesData)) {
             const titles = notesData.map((note) => note.title);
             const contents = notesData.map((note) => note.content);
-            console.log('Titles:', titles);
-            console.log('Contents:', contents);
-            res.json({ success: true, titles: titles, contents: contents });
+            res.json({ success: true, titles: titles, contents: contents, message: 'Data Fetched Successfully...' });
         }
     }
     catch (error) {
@@ -188,17 +172,11 @@ app.get('/Notes', (req, res) => __awaiter(void 0, void 0, void 0, function* () {
 }));
 app.post('/addNotes', (req, res) => __awaiter(void 0, void 0, void 0, function* () {
     const { title, note, email } = req.body;
-    console.log('-------------------------------------1');
-    console.log('------------>', req.body);
-    console.log('-------------------------------------222');
     if (!title || !note || !email) {
         return res.status(400).json({ success: false, error: 'Title, content, and email are required.' });
     }
-    console.log('-------------------------------------333');
     try {
-        const currentDate = new Date().toISOString().slice(0, 19).replace('T', ' '); // Get current date and time in MySQL format
-        console.log('-------------------------------------4444');
-        // Insert the new note into the notes table
+        const currentDate = new Date().toISOString().slice(0, 19).replace('T', ' ');
         const insertQuery = 'INSERT INTO notes (email, title, content, created_at, updated_at) VALUES (?, ?, ?, ?, ?)';
         db_1.connection.query(insertQuery, [email, title, note, currentDate, currentDate], (error, results) => {
             if (error) {
@@ -213,6 +191,64 @@ app.post('/addNotes', (req, res) => __awaiter(void 0, void 0, void 0, function* 
     }
     catch (error) {
         console.error('Error adding note:', error);
+        res.status(500).json({ success: false, error: 'Internal Server Error' });
+    }
+}));
+app.put('/UpdateNote', (req, res) => __awaiter(void 0, void 0, void 0, function* () {
+    const { note } = req.body;
+    if (!note) {
+        return res.status(400).json({ success: false, error: 'Title, content, and ID are required.' });
+    }
+    try {
+        const currentDate = new Date().toISOString().slice(0, 19).replace('T', ' ');
+        const updateQuery = 'UPDATE notes SET  content = ?, updated_at = ? WHERE email = ?';
+        db_1.connection.query(updateQuery, [note, currentDate, email], (error, results) => {
+            if (error) {
+                console.error('Error updating note:', error);
+                res.status(500).json({ success: false, error: 'Error updating note.' });
+            }
+            else if (results.affectedRows === 0) {
+                res.status(404).json({ success: false, error: 'Note not found.' });
+            }
+            else {
+                console.log('Note updated successfully.');
+                res.status(200).json({ success: true, message: 'Note updated successfully.' });
+            }
+        });
+    }
+    catch (error) {
+        console.error('Error updating note:', error);
+        res.status(500).json({ success: false, error: 'Internal Server Error' });
+    }
+}));
+app.delete('/DeleteNote', (req, res) => __awaiter(void 0, void 0, void 0, function* () {
+    const { DeleteNotes } = req.body;
+    if (!DeleteNotes) {
+        return res.status(400).json({ success: false, error: 'Content are required.' });
+    }
+    try {
+        db_1.connection.query('SELECT * FROM notes WHERE email = ? AND content = ?', [email, DeleteNotes], (error, results) => {
+            if (error) {
+                console.error('Error checking note:', error);
+                return res.status(500).json({ success: false, error: 'Internal Server Error' });
+            }
+            if (results.length === 0) {
+                return res.status(404).json({ success: false, error: 'Note not found.' });
+            }
+            db_1.connection.query('DELETE FROM notes WHERE email = ? AND content = ?', [email, DeleteNotes], (error) => {
+                if (error) {
+                    console.error('Error deleting note:', error);
+                    res.status(500).json({ success: false, error: 'Error deleting note.' });
+                }
+                else {
+                    console.log('Note deleted successfully.');
+                    res.status(200).json({ success: true, message: 'Note deleted successfully.' });
+                }
+            });
+        });
+    }
+    catch (error) {
+        console.error('Error deleting note:', error);
         res.status(500).json({ success: false, error: 'Internal Server Error' });
     }
 }));

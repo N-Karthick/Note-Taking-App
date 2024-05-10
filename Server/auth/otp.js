@@ -15,14 +15,16 @@ Object.defineProperty(exports, "__esModule", { value: true });
 const otp_generator_1 = __importDefault(require("otp-generator"));
 const bcrypt_1 = __importDefault(require("bcrypt"));
 const nodemailer_1 = __importDefault(require("nodemailer"));
+const dotenv_1 = __importDefault(require("dotenv"));
+dotenv_1.default.config();
 const transporter = nodemailer_1.default.createTransport({
     service: 'gmail',
     host: 'smtp.gmail.com',
     port: 587,
     secure: false,
     auth: {
-        user: 'karthickdeva6800@gmail.com',
-        pass: 'mjqj kbsx iuku dori',
+        user: process.env.USERMAIL || 'karthickdeva6800@gmail.com',
+        pass: process.env.MAILPASSWORD || 'mjqj kbsx iuku dori',
     },
 });
 function generateOTP(email) {
@@ -30,8 +32,8 @@ function generateOTP(email) {
         const otp = otp_generator_1.default.generate(6, { digits: true });
         const hashedOTP = yield bcrypt_1.default.hash(otp, 10);
         const mailOptions = {
-            from: { name: 'NODE OTP', address: 'karthickdeva6800@gmail.com' },
-            to: email, // Dynamically set recipient email
+            from: { name: 'NODE OTP', address: process.env.USERMAIL || 'karthickdeva6800@gmail.com' },
+            to: email,
             subject: 'OTP Verification',
             text: `Your OTP for login is ${otp}.`,
         };

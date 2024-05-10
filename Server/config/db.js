@@ -13,7 +13,6 @@ exports.connection = mysql_1.default.createConnection({
     password: process.env.PASSWORD || '',
     database: process.env.DATABASE || 'noteapp',
 });
-// Connect to the database
 exports.connection.connect((err) => {
     if (err) {
         console.error('Error connecting to MySQL: ', err);

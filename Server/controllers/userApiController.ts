@@ -1,16 +1,13 @@
 import express, { Request, Response } from 'express';
-import cors from 'cors'; // Import the cors middleware
+import cors from 'cors';
 import { connection } from '../config/db';
 import generateOTP from '../auth/otp';
-require('dotenv').config;
+import jwt from 'jsonwebtoken';
 import bcrypt from 'bcrypt';
+require('dotenv').config;
 const app = express();
 const port = '4000';
-import jwt from 'jsonwebtoken';
-
-// Use the cors middleware
 app.use(cors());
-
 app.use(express.json());
 let otpCache: string | undefined;
 let email: string | undefined;
@@ -43,44 +40,37 @@ app.post('/Signup', async (req: Request, res: Response) => {
       return res.status(400).json({ success: false, error: 'Email already exists. Please login.' });
     }
 
-    // Verify OTP
     if (!otpCache) {
       return res.status(400).json({ success: false, error: 'OTP cache is missing. Please try again.' });
     }
 
-    const otpMatch = await bcrypt.compare(otp, otpCache); 
+    const otpMatch = await bcrypt.compare(otp, otpCache);
     if (!otpMatch) {
       return res.status(400).json({ success: false, error: 'Incorrect OTP. Please try again.' });
     }
-
     const hashedPassword = await bcrypt.hash(password, 7);
 
-    const newUser = { name, email, phone, password };
-    connection.query('INSERT INTO signup SET ?', newUser, (err,result) => {
+    const newUser = { name, email, phone, password: hashedPassword };
+    connection.query('INSERT INTO signup SET ?', newUser, (err, result) => {
+      if (err) {
+        console.error('Error inserting new user:', err);
+        return res.status(500).json({ success: false, message: 'Internal Server Error' });
+      }
+      const email = newUser.email;
+      const initialNotes = [
+        { email: email, title: 'third Note', content: 'This is your third note.' },
+      ];
+      connection.query('INSERT INTO notes (email, title, content) VALUES ?', [initialNotes.map(note => [note.email, note.title, note.content])], (err) => {
         if (err) {
-            console.error('Error inserting new user:', err);
-            return res.status(500).json({ success: false, message: 'Internal Server Error' });
+          console.error('Error inserting initial notes:', err);
+          return res.status(500).json({ success: false, message: 'Internal Server Error' });
         }
-        console.log('results...,...............>',newUser)
-        const email = newUser.email;
-        console.log('userId...>',email)
-        // Insert initial notes for the user
-        const initialNotes = [
-            { email: email, title: 'third Note', content: 'This is your third note.' },
-           // { user_id: userId, title: 'fourth Note', content: 'This is your fourth note.' }
-          ];
-console.log("-----------------------------------------------")
-        connection.query('INSERT INTO notes (email, title, content) VALUES ?', [initialNotes.map(note => [note.email, note.title, note.content])], (err) => {
-            if (err) {
-                console.error('Error inserting initial notes:', err);
-                return res.status(500).json({ success: false, message: 'Internal Server Error' });
-            }
-            console.log('Initial notes inserted.');
-            res.status(201).json({ success: true, message: 'User signed up successfully!...Please Login' });
-        });
-    });
+        console.log('Initial notes inserted.');
+        res.status(201).json({ success: true, message: 'User signed up successfully!...Please Login' });
+      });
     });
   });
+});
 
 
 
@@ -96,7 +86,6 @@ app.post('/getOTP', (req: Request, res: Response) => {
     }
 
     if (results.length > 0) {
-
       console.log('Email or Mobile Number Already Exists...');
       return res.status(400).json({ success: false, error: 'Email or Mobile Number Already Exists...' });
     }
@@ -107,18 +96,17 @@ app.post('/getOTP', (req: Request, res: Response) => {
       res.json({ message: 'OTP generated and sent to your email for verification.' });
     } catch (error) {
       console.error('Error during OTP generation and sending:', error);
-     res.status(500).json({ error: 'Internal Server Error' });
+      res.status(500).json({ error: 'Internal Server Error' });
     }
   });
 });
 
 app.post('/Login', async (req: Request, res: Response) => {
   const secretKey = 'qwertyuioplkjhgfdsazxcvbnmQWERTYUIOPLKJHGFDSAZXCVBNM.,1234567890!@#$%^&*()';
-email = req.body.email;
-console.log('email ----------?',email)
+  email = req.body.email;
   try {
+
     const { email, password } = req.body;
-console.log('login--reb body--->',req.body)
     if (!email || !password) {
       return res.status(400).json({ success: false, error: 'Email and password are required.' });
     }
@@ -133,24 +121,15 @@ console.log('login--reb body--->',req.body)
         return res.status(404).json({ success: false, error: 'User not found. Please sign up.' });
       }
       const user = results[0];
-      console.log('user==>',user);
-      console.log('password==>',password,user.password);   
-
-        const passwordMatch = await bcrypt.compare(password, user.password);
-
-      console.log('user passwordMatch==>',await bcrypt.compare(password, user.password));  
-      if (user.password !== password ) {
-        
-         console.log('login--Incorrect password.--->')
+      const passwordMatch = await bcrypt.compare(password, user.password);
+      if (passwordMatch) {
         return res.status(401).json({ success: false, error: 'Incorrect password.' });
       }
 
       console.log('Login In Succesfull....')
       const token = jwt.sign({ id: user.id, email: user.email }, secretKey);
-console.log('TOKEN----->',token); 
-     email
-      res.json({ success: true,message: 'Login In Succesfull.', token,name: user.name, email: user.email,id:user.idsignup});
- 
+      email
+      res.json({ success: true, message: 'Login In Succesfull.', token, name: user.name, email: user.email, id: user.idsignup });
     });
   } catch (error) {
     console.error('Error during login:', error);
@@ -160,7 +139,6 @@ console.log('TOKEN----->',token);
 
 
 app.get('/Notes', async (req: Request, res: Response) => {
-  // const { email } = req.query;
   if (!email) {
     return res.status(400).json({ success: false, error: 'Email is required.' });
   }
@@ -169,16 +147,13 @@ app.get('/Notes', async (req: Request, res: Response) => {
     const userData = await new Promise((resolve, reject) => {
       connection.query('SELECT email FROM signup WHERE email = ?', [email], (error, results) => {
         if (error) {
-          reject(error);    
+          reject(error);
         } else {
           resolve(results);
         }
       });
     });
     const userId = email;
-
-    console.log("================================>userId",userId)
-    // Fetch notes for the user based on their user ID
     const notesData = await new Promise((resolve, reject) => {
       connection.query('SELECT title, content FROM notes WHERE email = ?', [userId], (error, results) => {
         if (error) {
@@ -191,11 +166,7 @@ app.get('/Notes', async (req: Request, res: Response) => {
     if (Array.isArray(notesData)) {
       const titles = notesData.map((note) => note.title);
       const contents = notesData.map((note) => note.content);
-      
-      console.log('Titles:', titles);
-      console.log('Contents:', contents);
-    
-      res.json({ success: true, titles: titles, contents: contents });
+      res.json({ success: true, titles: titles, contents: contents, message: 'Data Fetched Successfully...' });
     }
   } catch (error) {
     console.error('Error fetching notes:', error);
@@ -210,9 +181,7 @@ app.post('/addNotes', async (req: Request, res: Response) => {
   }
 
   try {
-    const currentDate = new Date().toISOString().slice(0, 19).replace('T', ' '); // Get current date and time in MySQL format
-
-    // Insert the new note into the notes table
+    const currentDate = new Date().toISOString().slice(0, 19).replace('T', ' ');
     const insertQuery = 'INSERT INTO notes (email, title, content, created_at, updated_at) VALUES (?, ?, ?, ?, ?)';
     connection.query(insertQuery, [email, title, note, currentDate, currentDate], (error, results) => {
       if (error) {
@@ -230,8 +199,62 @@ app.post('/addNotes', async (req: Request, res: Response) => {
 });
 
 
+app.put('/UpdateNote', async (req: Request, res: Response) => {
+  const { note } = req.body;
+  if (!note) {
+    return res.status(400).json({ success: false, error: 'Title, content, and ID are required.' });
+  }
+
+  try {
+    const currentDate = new Date().toISOString().slice(0, 19).replace('T', ' ');
+    const updateQuery = 'UPDATE notes SET  content = ?, updated_at = ? WHERE email = ?';
+    connection.query(updateQuery, [note, currentDate, email], (error, results) => {
+      if (error) {
+        console.error('Error updating note:', error);
+        res.status(500).json({ success: false, error: 'Error updating note.' });
+      } else if (results.affectedRows === 0) {
+        res.status(404).json({ success: false, error: 'Note not found.' });
+      } else {
+        console.log('Note updated successfully.');
+        res.status(200).json({ success: true, message: 'Note updated successfully.' });
+      }
+    });
+  } catch (error) {
+    console.error('Error updating note:', error);
+    res.status(500).json({ success: false, error: 'Internal Server Error' });
+  }
+});
 
 
+app.delete('/DeleteNote', async (req: Request, res: Response) => {
+  const { DeleteNotes } = req.body;
+  if (!DeleteNotes) {
+    return res.status(400).json({ success: false, error: 'Content are required.' });
+  }
+  try {
+    connection.query('SELECT * FROM notes WHERE email = ? AND content = ?', [email, DeleteNotes], (error, results) => {
+      if (error) {
+        console.error('Error checking note:', error);
+        return res.status(500).json({ success: false, error: 'Internal Server Error' });
+      }
+      if (results.length === 0) {
+        return res.status(404).json({ success: false, error: 'Note not found.' });
+      }
+      connection.query('DELETE FROM notes WHERE email = ? AND content = ?', [email, DeleteNotes], (error) => {
+        if (error) {
+          console.error('Error deleting note:', error);
+          res.status(500).json({ success: false, error: 'Error deleting note.' });
+        } else {
+          console.log('Note deleted successfully.');
+          res.status(200).json({ success: true, message: 'Note deleted successfully.' });
+        }
+      });
+    });
+  } catch (error) {
+    console.error('Error deleting note:', error);
+    res.status(500).json({ success: false, error: 'Internal Server Error' });
+  }
+});
 
 app.listen(port, () => {
   console.log(`Server running at http://localhost:${port}`);
