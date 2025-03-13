@@ -8,6 +8,6 @@ CREATE TABLE `noteapp`.`signup`
  `password` VARCHAR(45) NOT NULL, 
   PRIMARY KEY (`idsignup`),
   UNIQUE INDEX `idsignup_UNIQUE` (`idsignup` ASC),
-  UNIQUE INDEX `Email_UNIQUE` (`email` ASC),
-  UNIQUE INDEX `Phone_UNIQUE` (`phone` ASC)
+  UNIQUE INDEX `Email_UNIQUE` (`email` ASC) ,
+  UNIQUE INDEX `Phone_UNIQUE` (`phone` ASC),
 )
